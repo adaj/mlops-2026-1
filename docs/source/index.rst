@@ -8,43 +8,10 @@ Intent Classifier documentation
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
+   :caption: Navigation:
 
-App
-===
+   app_pkg
+   intent_classifier_pkg
+   db_pkg
 
-.. automodule:: app.app
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
-.. automodule:: app.services
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Intent Classifier
-=================
-
-.. automodule:: intent_classifier.intent_classifier
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Database
-========
-
-.. automodule:: db.auth
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. automodule:: db.engine
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. automodule:: db.schema
-   :members:
-   :undoc-members:
-   :show-inheritance:
