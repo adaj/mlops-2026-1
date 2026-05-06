@@ -1,5 +1,5 @@
-app/
-====
+Application Modules
+===================
 
 .. toctree::
    :maxdepth: 2

@@ -1,7 +1,7 @@
 engine module
 =============
 
-.. automodule:: engine
+.. automodule:: db.engine
    :members:
    :show-inheritance:
    :undoc-members:

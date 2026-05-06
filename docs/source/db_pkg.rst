@@ -1,5 +1,5 @@
-db/
-===
+Database Layer
+==============
 
 .. toctree::
    :maxdepth: 2

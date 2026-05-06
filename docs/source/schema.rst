@@ -1,7 +1,7 @@
 schema module
 =============
 
-.. automodule:: schema
+.. automodule:: db.schema
    :members:
    :show-inheritance:
    :undoc-members:

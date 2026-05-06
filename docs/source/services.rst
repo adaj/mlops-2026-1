@@ -1,7 +1,7 @@
 services module
 ===============
 
-.. automodule:: services
+.. automodule:: app.services
    :members:
    :show-inheritance:
    :undoc-members:

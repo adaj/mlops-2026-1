@@ -1,5 +1,5 @@
-intent_classifier/
-==================
+Classification Logic
+====================
 
 .. toctree::
    :maxdepth: 2
