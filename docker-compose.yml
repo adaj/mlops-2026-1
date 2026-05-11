@@ -1,0 +1,11 @@
+name: mlops-2026-1
+services:
+  backend:
+    container_name: mlops-container
+    build:
+      context: .
+      dockerfile: app/app.Dockerfile
+    ports:
+      - "8000:8000"
+    env_file: .env
+    restart: unless-stopped

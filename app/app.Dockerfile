@@ -17,7 +17,7 @@ ENV PATH="/home/appuser/.local/bin:$PATH"
 # Upgrade pip
 RUN pip install --no-cache-dir --upgrade pip
 
-# Copy only the requirements file first to lever    age Docker caching
+# Copy only the requirements file first to leverage Docker caching
 COPY --chown=appuser:appuser requirements.txt .
 
 # Install the Python dependencies
