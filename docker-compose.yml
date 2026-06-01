@@ -7,5 +7,25 @@ services:
       dockerfile: app/app.Dockerfile
     ports:
       - "8000:8000"
-    env_file: .env
+    environment:
+      - ENV=dev
+      - MONGO_URI=${MONGO_URI}
+      - MONGO_DB=${MONGO_DB}
+      - WANDB_API_KEY=${WANDB_API_KEY}
+      - WANDB_MODEL_URL=${WANDB_MODEL_URL}
+      # OpenTelemetry environment variables
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://lgtm:4318
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=mlops-container
+      - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+      - OTEL_PYTHON_LOG_LEVEL=DEBUG
     restart: unless-stopped
+    depends_on:
+      - lgtm
+
+  lgtm:
+    image: grafana/otel-lgtm:latest
+    ports:
+      - "3000:3000" # Grafana
+      - "3100:3100" # Loki
+      - "9090:9090" # Prometheus
+      - "4317:4317" # Tempo OTLP gRPC

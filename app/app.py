@@ -10,6 +10,7 @@ Comando para rodar:
 
 
 import os
+import time
 import traceback
 from dotenv import load_dotenv
 import logging
@@ -22,8 +23,31 @@ from contextlib import asynccontextmanager
 from db.auth import conditional_auth
 from app import services
 
+# Import OpenTelemetry setup from observability module
+from app.observability import init_opentelemetry
+from opentelemetry import trace
+from opentelemetry.metrics import get_meter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor 
 
+# Initialize OpenTelemetry
+init_opentelemetry()
 logger = logging.getLogger(__name__)
+
+# Get tracer and meter after initialization
+tracer = trace.get_tracer(__name__)
+meter = get_meter(__name__)
+
+# Get custom metrics after initialization
+prediction_count = meter.create_counter(
+    "prediction_count",
+    description="Number of predictions made"
+)
+prediction_latency = meter.create_histogram(
+    "prediction_latency_seconds",
+    description="Latency of model predictions in seconds",
+    unit="s"
+)
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -86,6 +110,28 @@ app.add_middleware(
     # Em produção: evite "*" e especifique os domínios confiáveis.
 )
 
+# Instrument FastAPI metrics
+FastAPIInstrumentor().instrument_app(app)
+
+# Add request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    
+    # Log incoming request
+    logger.info(f"Incoming request: {request.method} {request.url}")
+    if request.method == "POST":
+        # Note: we can't log the body here easily without consuming it
+        logger.info(f"Request headers: {dict(request.headers)}")
+    
+    response = await call_next(request)
+    
+    # Log response
+    process_time = time.time() - start_time
+    logger.info(f"Response: {response.status_code} - Time: {process_time:.3f}s")
+    
+    return response
+
 
 """
 Routes
@@ -101,6 +147,7 @@ async def predict(text: str, owner: str = Depends(conditional_auth)):
     Este é um 'Controller' enxuto. 
     Ele apenas delega a lógica de negócio para o services.py.
     """
+    start_time = time.time()
     try:
         # 1. O Controller delega TODA a lógica de negócio para o services.py
         results = services.predict_and_log_intent(
@@ -108,6 +155,19 @@ async def predict(text: str, owner: str = Depends(conditional_auth)):
             owner=owner, 
             models=MODELS
         )
+        # Record custom metrics
+        duration = time.time() - start_time
+        predictions = results.get("predictions", {})
+        for model_name, pred in predictions.items():
+            top_intent = "unknown"
+            if hasattr(pred, "top_intent"):
+                top_intent = pred.top_intent
+            elif isinstance(pred, dict) and "top_intent" in pred:
+                top_intent = pred["top_intent"]
+            
+            prediction_latency.record(duration, {"model": model_name})
+            prediction_count.add(1, {"model": model_name, "intent": top_intent})
+
         # 2. O Controller retorna a resposta (Lógica de View) no formato JSON
         return JSONResponse(content=results)
     except Exception as e:
