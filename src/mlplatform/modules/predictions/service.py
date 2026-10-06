@@ -1,42 +1,19 @@
 """
-services.py
-===========
+service.py
+==========
 
-Módulo responsável pela lógica de negócios da aplicação, como carregar os classificadores e processar predições.
+Lógica de negócio de predição: executa os modelos e registra o resultado.
 """
 
-from typing import Dict
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
+from typing import Dict
 
 from mlplatform.modules.intent_classifier import IntentClassifier
 from mlplatform.modules.predictions.repository import log_prediction
 from mlplatform.modules.predictions.schemas import IntentPrediction, Response
 
 logger = logging.getLogger(__name__)
-
-
-def load_all_classifiers(models_to_load_str) -> dict:
-    """
-    Carrega todos os modelos de ML especificados na variável de ambiente
-    WANDB_MODELS a partir do registro do Weights & Biases.
-    """
-    MODELS = {}
-    model_urls = [url.strip() for url in models_to_load_str.split(',') if url.strip()]
-    logger.info(f"Carregando {len(model_urls)} modelo(s) do W&B...")
-    for url in model_urls:
-        try:
-            # 2. Extrair o nome do modelo da URL
-            model_name = url.split('/')[-1].split(':')[0]
-            # 3. Carregar o modelo usando o IntentClassifier
-            logger.info(f"Carregando modelo: '{model_name}'")
-            MODELS[model_name] = IntentClassifier(load_model=url)
-            logger.info(f"Modelo '{model_name}' carregado com sucesso.")
-        except Exception as e:
-            logger.error(f"Falha ao carregar o modelo de '{url}': {e}")
-            # Parar a inicialização do app se falhar ao carregar um modelo.
-            raise Exception(f"Falha ao carregar o modelo de '{url}': {e}")
-    return MODELS
 
 
 def predict_and_log_intent(
