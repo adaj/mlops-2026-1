@@ -20,7 +20,7 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
 # Internal modules
-from db.auth import conditional_auth
+from mlplatform.modules.auth import conditional_auth
 from app import services
 
 # Import OpenTelemetry setup from observability module
