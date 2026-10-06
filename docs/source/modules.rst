@@ -1,9 +1,12 @@
-db
-==
+modules
+=======
 
 .. toctree::
    :maxdepth: 4
 
+   main
+   predictions
    auth
-   engine
-   schema
+   persistence
+   schemas
+   intent_classifier

@@ -1,0 +1,8 @@
+.git
+.github
+wandb/
+docs/
+tests/
+**/__pycache__
+.venv
+*.egg-info

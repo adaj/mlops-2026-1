@@ -1,21 +1,18 @@
-intent\_classifier package
-==========================
+intent_classifier module
+========================
 
-Submodules
-----------
-
-intent\_classifier.intent\_classifier module
---------------------------------------------
-
-.. automodule:: intent_classifier.intent_classifier
+.. automodule:: mlplatform.modules.intent_classifier.ml.classifier
    :members:
    :show-inheritance:
    :undoc-members:
 
-Module contents
----------------
-
-.. automodule:: intent_classifier
+.. automodule:: mlplatform.modules.intent_classifier.ml.wandb_artifacts
    :members:
    :show-inheritance:
    :undoc-members:
+
+.. automodule:: mlplatform.modules.intent_classifier.ml.config
+   :members:
+   :show-inheritance:
+   :undoc-members:
+

@@ -4,7 +4,7 @@ services:
     container_name: mlops-container
     build:
       context: .
-      dockerfile: app/app.Dockerfile
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     environment:

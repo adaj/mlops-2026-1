@@ -1,46 +1,17 @@
 """
-intent_classifier.py
-====================
+classifier.py
+=============
 
-This script works as a module and as a CLI tool.
+IntentClassifier: treino, avaliação e predição de intenções com Keras.
 
-To use it as a module, you can do:
 ::
 
-    from intent_classifier import IntentClassifier
+    from mlplatform.modules.intent_classifier import IntentClassifier
 
-    # train a model
-    classifier = IntentClassifier(config="models/confusion_config.yml", training_data="data/confusion_intents.yml")
-    classifier.train(save_model="models/confusion-clf/")
-    # or load a model from W&B
-    classifier = IntentClassifier(config="models/confusion_config.yml", load_model="adaj/intent-classifier-2025-2/confusion-clf:v1")
-    # predict a new text
+    # carregar um modelo do W&B
+    classifier = IntentClassifier(load_model="adaj/intent-classifier-2025-2/confusion-clf:v1")
     classifier.predict(input_text="oi")
-
-Or, or you can use it as a CLI tool, you can do:
-::
-
-    cd intent_classifier
-
-    python intent_classifier.py train \
-        --config="confusion/confusion_config.yml" \
-        --training_data="confusion/confusion_intents.yml" \
-        --save_model="confusion/confusion.keras" \
-        --wandb_project="mlops-2026-1"
-
-    python intent_classifier.py train \
-        --config="clair_intents/clair_intents_config.yml" \
-        --training_data="clair_intents/clair_intents.yml" \
-        --save_model="clair_intents/clair_intents.keras" \
-        --wandb_project="mlops-2026-1"
-
-    python intent_classifier.py predict \
-        --load_model="models/confusion.keras" \
-        --input_text="teste teste" \
-        --wandb_project="intent-classifier"
-
 """
-# instalar alguns pacotes auxiliares
 
 import os
 import logging
@@ -67,82 +38,16 @@ from tensorflow.keras.saving import register_keras_serializable
 import wandb
 from wandb.integration.keras import WandbMetricsLogger, WandbEvalCallback # WandbModelCheckpoint
 
-import dotenv
-dotenv.load_dotenv()
+
+from mlplatform.modules.intent_classifier.ml.config import Config
+from mlplatform.modules.intent_classifier.ml.hub_layer import HubLayer
+from mlplatform.modules.intent_classifier.ml.wandb_artifacts import fetch_artifact_from_wandb
+from mlplatform.shared.config import load_env
+
+load_env()
 
 logger = logging.getLogger(__name__)
 
-@register_keras_serializable()
-class HubLayer(tf.keras.layers.Layer):
-    """
-    A custom Keras layer to load and use a TensorFlow Hub module.
-
-    This layer loads a pre-trained model from a TensorFlow Hub URL
-    and integrates it into a Keras model. It can be set to be
-    trainable or frozen.
-
-    :param hub_url: The URL of the TensorFlow Hub module to load.
-    :type hub_url: str
-    :param trainable: Whether the loaded Hub module should be trainable.
-    :type trainable: bool, optional
-    """
-    def __init__(self, hub_url, trainable=False, **kwargs):
-        """
-        Initializes the HubLayer.
-        """
-        super(HubLayer, self).__init__(**kwargs)
-        self.hub_module = hub.load(hub_url)
-        self.hub_module.trainable = trainable
-
-    def call(self, inputs: tf.Tensor) -> tf.Tensor:
-        """
-        Executes the forward pass of the layer.
-
-        :param inputs: The input tensor(s) to the Hub module.
-        :type inputs: tf.Tensor
-        :return: The output tensor(s) from the Hub module.
-        :rtype: tf.Tensor
-        """
-        return self.hub_module(inputs)
-
-@dataclass
-class Config:
-    """
-    A dataclass to hold all configuration parameters for the IntentClassifier.
-
-    This object stores settings related to the dataset, model architecture,
-    training process, and logging.
-    """
-    dataset_name: str = "undefined"
-    """Name of the dataset, used for logging and model naming."""
-    codes : List[str] = None
-    """A list of intent codes (class labels). Automatically populated from data if not provided."""
-    architecture: str = "v0.1.5"
-    """Version tag for the model architecture."""
-    task: str = "undefined"
-    """The current task being performed (e.g., 'train', 'predict')."""
-    stop_words_file: Optional[str] = None
-    """Path to a text file containing stopwords, one per line."""
-    min_words: int = 1
-    """The minimum number of words required in an utterance for processing. Shorter inputs are padded."""
-    embedding_model: Union[str, List[str]] = 'https://www.kaggle.com/models/google/universal-sentence-encoder/tensorFlow2/multilingual/2'
-    """URL or path to the TensorFlow Hub embedding model."""
-    sent_hl_units: Union[int, List[int]] = 32
-    """Number of units in the hidden layer."""
-    sent_dropout: Union[float, List[float]] = 0.1
-    """Dropout rate applied after the hidden layer."""
-    l1_reg: float = 0.01
-    """L1 regularization factor for the hidden layer kernel."""
-    l2_reg: float = 0.01
-    """L2 regularization factor for the hidden layer kernel."""
-    epochs: int = 500
-    """Maximum number of epochs for training."""
-    callback_patience: int = 20
-    """Number of epochs with no improvement to wait before early stopping."""
-    learning_rate: Union[float, List[float]] = 5e-3
-    """Initial learning rate for the optimizer."""
-    validation_split: float = 0.2
-    """Fraction of the training data to be used as validation data."""
 
 def remove_duplicate_words(text: str) -> str:
     """
@@ -165,54 +70,6 @@ def remove_duplicate_words(text: str) -> str:
     return ' '.join(result)
 
 
-def fetch_artifact_from_wandb(model_full_name: str) -> Tuple[str, str]:
-    """
-    Download a model artifact from W&B and return the paths to the model and config files.
-
-    :param model_full_name: The W&B artifact full name (e.g., "adaj/intent-classifier-2025-2/confusion-clf:v1").
-                           Must have format: "entity/project/artifact_name:version"
-    :type model_full_name: str
-    :return: A tuple containing the local file path to the Keras model file and the config file.
-    :rtype: tuple[str, str]
-    :raises ValueError: If format is invalid or files are not found in the artifact.
-    """
-    # Validate format
-    parts = model_full_name.split("/")
-    if len(parts) != 3 or ":" not in parts[2]:
-        raise ValueError(
-            f"Invalid model_full_name format: '{model_full_name}'. "
-            f"Expected format: 'entity/project/artifact_name:version' (e.g., 'adaj/intent-classifier-2025-2/confusion-clf:v1')"
-        )
-    
-    # Download artifact from W&B
-    try:
-        api = wandb.Api()
-        artifact = api.artifact(model_full_name, type='model')
-    except wandb.errors.CommError as e:
-        raise ValueError(f"Could not fetch artifact '{model_full_name}' from W&B. Ensure the path is correct and you are logged in. Original error: {e}")
-
-    # Create a target directory for the download
-    models_dir = Path(os.path.dirname(__file__)) / "models"
-    models_dir.mkdir(exist_ok=True)
-    
-    # Download artifact content. The path returned is the directory where files are.
-    download_path = artifact.download(root=models_dir)
-    
-    model_file, config_file = None, None
-    # Iterate over the files *in the artifact manifest* to find the correct ones.
-    # This prevents accidentally loading unrelated files from the same directory.
-    for f in artifact.files():
-        if f.name.endswith((".keras", ".h5")):
-            model_file = os.path.join(download_path, f.name)
-        elif f.name.endswith("_config.yml"):
-            config_file = os.path.join(download_path, f.name)
-            
-    if not model_file:
-        raise ValueError(f"Model file (.keras or .h5) not found in W&B artifact '{model_full_name}'.")
-    if not config_file:
-        raise ValueError(f"Config file (_config.yml) not found in W&B artifact '{model_full_name}'.")
-        
-    return model_file, config_file
 
 
 class IntentClassifier:
@@ -694,47 +551,3 @@ class IntentClassifier:
         if original_input_is_string:
             return results[0]
         return results
-
-
-# This script works as a module and as a CLI tool
-if __name__ == "__main__":
-    import fire
-    # Instead of fire.Fire(IntentClassifier),
-    # Define the functions to be used by Fire CLI so that 
-    #  it's not cluttered with all the functions in the IntentClassifier class
-    def train(config: str, training_data: str, save_model: str = None, wandb_project: str = None):
-        """
-        Train the model with the given configuration and examples.
-
-        :param config: Path to the YAML configuration file.
-        :type config: str
-        :param training_data: Path to the YAML file with training examples.
-        :type training_data: str
-        :param save_model: Path to save the trained model (e.g., "model.keras").
-        :type save_model: str   
-        :param wandb_project: Name of the Weights & Biases project to log to.
-        :type wandb_project: str
-        """
-        classifier = IntentClassifier(config=config, training_data=training_data, wandb_project=wandb_project)
-        classifier.train(save_model=save_model)
-        print("Training completed successfully!")
-
-    def predict(load_model: str, input_text: str, wandb_project: str = None):
-        """
-        Make predictions using a trained model.
-
-        :param load_model: Path to the saved Keras model file or W&B URL.
-        :type load_model: str
-        :param input_text: The input text string to classify.
-        :type input_text: str
-        :param wandb_project: Name of the Weights & Biases project to log to.
-        :type wandb_project: str
-        """
-        classifier = IntentClassifier(load_model=load_model, wandb_project=wandb_project)
-        predictions = classifier.predict(input_text)
-        print(f"Predictions: {predictions}")
-
-    fire.Fire({
-        'train': train,
-        'predict': predict
-    }, serialize=False)

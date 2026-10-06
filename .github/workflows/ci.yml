@@ -51,4 +51,4 @@ jobs:
 
       # 5. Constroi a imagem Docker para validar o Dockerfile
       - name: Construir imagem Docker
-        run: docker build -t intent-clf:latest -f app/app.Dockerfile .
+        run: docker build -t intent-clf:latest -f Dockerfile .

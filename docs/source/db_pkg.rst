@@ -5,5 +5,5 @@ Database Layer
    :maxdepth: 2
 
    auth
-   engine
-   schema
+   persistence
+   schemas
