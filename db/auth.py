@@ -12,7 +12,7 @@ Ler todos os tokens:
 
 import uuid
 from datetime import datetime, timedelta
-from db.engine import get_mongo_collection
+from mlplatform.shared.db.mongo import get_collection as get_mongo_collection
 from fastapi import Request, HTTPException
 from dotenv import load_dotenv
 import os

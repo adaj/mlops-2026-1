@@ -10,8 +10,8 @@ from datetime import datetime, timezone
 import logging
 
 from intent_classifier import IntentClassifier
-from db.engine import log_prediction
-from db.schema import IntentPrediction, Response
+from mlplatform.modules.predictions.repository import log_prediction
+from mlplatform.modules.predictions.schemas import IntentPrediction, Response
 
 logger = logging.getLogger(__name__)
 
