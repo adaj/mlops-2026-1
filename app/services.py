@@ -9,7 +9,7 @@ from typing import Dict
 from datetime import datetime, timezone
 import logging
 
-from intent_classifier import IntentClassifier
+from mlplatform.modules.intent_classifier import IntentClassifier
 from mlplatform.modules.predictions.repository import log_prediction
 from mlplatform.modules.predictions.schemas import IntentPrediction, Response
 
