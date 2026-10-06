@@ -1,4 +1,4 @@
-## Use the official TensorFlow image as a base
+## Use a slim Python image as base
 FROM python:3.11-slim-bullseye
 
 # Set the working directory
@@ -23,11 +23,14 @@ COPY --chown=appuser:appuser requirements.txt .
 # Install the Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code
-COPY --chown=appuser:appuser . .
+# Copy the application source code
+COPY --chown=appuser:appuser src ./src
+
+# Make the src-layout package importable
+ENV PYTHONPATH=/app/src
 
 # Expose the port the app runs on
 EXPOSE 8000
 
 # Command to run the application with Uvicorn
-CMD ["uvicorn", "app.app:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "debug"]
+CMD ["uvicorn", "mlplatform.main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "debug"]

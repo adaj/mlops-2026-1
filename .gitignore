@@ -12,3 +12,8 @@ __pycache__
 *.h5
 *.joblib
 *.pkl
+
+# Build / docs
+docs/build/
+*.egg-info/
+build/
