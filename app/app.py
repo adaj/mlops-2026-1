@@ -24,7 +24,7 @@ from db.auth import conditional_auth
 from app import services
 
 # Import OpenTelemetry setup from observability module
-from app.observability import init_opentelemetry
+from mlplatform.shared.observability import init_opentelemetry
 from opentelemetry import trace
 from opentelemetry.metrics import get_meter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor 
