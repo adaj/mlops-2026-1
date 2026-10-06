@@ -1,6 +1,5 @@
 .git
 .github
-.env
 wandb/
 docs/
 tests/
